@@ -10,6 +10,8 @@
 
 class Sphere {
 public:
+    Sphere();
+
     dvec3 center;
     float radius;
     dvec3 color;

@@ -30,21 +30,51 @@ dvec3 perfectReflectionVector(dvec3 normal, dvec3 i) {
     return i - (normal * normal.dot(i)) * 2.0;
 }
 
-//The lightning is currently based on Phong model
-bool sceneIntersection(Ray ray, dvec3 &point, dvec3 &normal, dvec3 &color) {
+
+bool intersects(Ray ray, dvec3 &point, dvec3 &normal, dvec3 &color) {
     float distance = 10000;
     bool intersect = false;
-    dvec3 tmpPoint;
+    dvec3 tempPoint;
+    color = dvec3(0.2, 0.7, 0.8);
     for (int i = 0; i < spheres.size(); ++i) {
-        if (ray.raySphereIntersection(spheres[i], tmpPoint) && std::abs(tmpPoint.z) < distance) {
-            point = tmpPoint;
-            distance = std::abs(point.z);
+        if (ray.raySphereIntersection(spheres[i], tempPoint) && std::abs(tempPoint.z) < distance) {
+            distance = std::abs(tempPoint.z);
+            point = tempPoint;
             normal = (point - spheres[i].center).unit();
             color = spheres[i].color;
             intersect = true;
         }
     }
     return intersect;
+}
+
+int maxDepth = 4;
+
+//The lightning is currently based on Phong model
+dvec3 raytrace(Ray ray, int depth) {
+
+    dvec3 point, normal, color;
+    //If the ray has intersected
+    if (intersects(ray, point, normal, color) && depth < maxDepth) {
+        float diffuseIntensity = 0;
+        float specIntensity = 0;
+        dvec3 reflectionDirection = perfectReflectionVector(normal, ray.direction).unit();
+        dvec3 reflectionColor = raytrace(Ray(point, reflectionDirection), depth + 1);
+        for (int j = 0; j < lights.size(); ++j) {
+            dvec3 lightDir = (lights[j].position - point).unit();
+            Ray shadowRay = Ray(point, lightDir);
+            dvec3 shadowPoint, shadowNormal, shadowColor;
+            if (!intersects(shadowRay, shadowPoint, shadowNormal, shadowColor)) {
+                dvec3 reflection = perfectReflectionVector(normal, lightDir).unit();
+                specIntensity +=
+                        lights[j].intensity * std::pow(std::max(0.0, ray.direction.dot(reflection)), 50);
+                diffuseIntensity += lights[j].intensity * std::max(0.0, normal.dot(lightDir));
+            }
+        }
+        color = color * (diffuseIntensity + specIntensity) + reflectionColor * 0.5;
+    }
+
+    return color;
 }
 
 void orthographicRender(float cameraWidth, float cameraHeight) {
@@ -57,20 +87,8 @@ void orthographicRender(float cameraWidth, float cameraHeight) {
             Ray ray = Ray(
                     dvec3((x * pixelSizeX - cameraWidth / 2) * screenRatio, y * pixelSizeY - cameraHeight / 2,
                           0), dvec3(0, 0, -1));
-            dvec3 point, normal, color;
-            bool intersect = sceneIntersection(ray, point, normal, color);
-            if (intersect) {
-                float diffuseIntensity = 0;
-                float specIntensity = 0;
-                for (int j = 0; j < lights.size(); ++j) {
-                    dvec3 lightDir = (lights[j].position - point).unit();
-                    dvec3 reflection = perfectReflectionVector(normal, lightDir).unit();
-                    specIntensity +=
-                            lights[j].intensity * std::pow(std::max(0.0, ray.direction.dot(reflection)), 50);
-                    diffuseIntensity += lights[j].intensity * std::max(0.0, normal.dot(lightDir));
-                }
-                framebuffer[x + y * width] = color * (diffuseIntensity + specIntensity);
-            }
+            dvec3 color = raytrace(ray, 0);
+            framebuffer[x + y * width] = color;
         }
     }
 
@@ -83,7 +101,6 @@ void orthographicRender(float cameraWidth, float cameraHeight) {
 void perspectiveRender(float fov, float cameraDistance) {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            framebuffer[x + y * width] = dvec3(0.2, 0.7, 0.8);;
             //In this case, since we are converting the image pixels to a normalized space, between [-1,1], we have to account for the aspect ratio
             //so the image wont get stretched
 
@@ -91,25 +108,8 @@ void perspectiveRender(float fov, float cameraDistance) {
             float worldY = -(2 * (y + 0.5) / (float) height - 1) * tan(fov / 2.0);
 
             Ray ray = Ray(dvec3(0, 0, 0), dvec3(worldX, worldY, -1).unit());
-            dvec3 point, normal, color;
-            bool intersect = sceneIntersection(ray, point, normal, color);
-            if (intersect) {
-                float diffuseIntensity = 0;
-                float specIntensity = 0;
-                for (int j = 0; j < lights.size(); ++j) {
-                    dvec3 lightDir = (lights[j].position - point).unit();
-                    Ray shadowRay = Ray(point,lightDir);
-                    dvec3 shadowPoint,shadowNormal, shadowColor;
-                    intersect = sceneIntersection(shadowRay, shadowPoint, shadowNormal, shadowColor);
-                    if(!intersect){
-                        dvec3 reflection = perfectReflectionVector(normal, lightDir).unit();
-                        specIntensity +=
-                                lights[j].intensity * std::pow(std::max(0.0, ray.direction.dot(reflection)), 50);
-                        diffuseIntensity += lights[j].intensity * std::max(0.0, normal.dot(lightDir));
-                    }
-                }
-                framebuffer[x + y * width] = color * (diffuseIntensity + specIntensity);
-            }
+            dvec3 color = raytrace(ray,0);
+            framebuffer[x + y * width] = color;
         }
     }
 
