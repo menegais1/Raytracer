@@ -20,7 +20,7 @@ bool Ray::raySphereIntersection(Sphere s, dvec3 &point) {
     if (distance < s.radius) {
         float c = s.radius;
         float a = distance;
-        float b = std::sqrt(a * a + c * c);
+        float b = std::sqrt(c * c - a * a);
         point = pointInsideSphere - direction.unit() * b;
         return true;
     } else if (distance == s.radius) {

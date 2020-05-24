@@ -25,10 +25,12 @@ void saveFrameBuffer(dvec3 *frameBuffer, int width, int height) {
     ofs.close();
 }
 
+//As discussed in: https://www.youtube.com/watch?v=naaeH1qbjdQ
 dvec3 perfectReflectionVector(dvec3 normal, dvec3 i) {
     return i - (normal * normal.dot(i)) * 2.0;
 }
 
+//The lightning is currently based on Phong model
 bool sceneIntersection(Ray ray, int x, int y) {
     dvec3 point;
     float distance = 10000;
@@ -47,7 +49,6 @@ bool sceneIntersection(Ray ray, int x, int y) {
                         lights[j].intensity * std::pow(std::max(0.0, ray.direction.dot(reflection)), 50);
                 diffuseIntensity += lights[j].intensity * std::max(0.0, normal.dot(lightDir));
             }
-            std::cout << specIntensity << std::endl;
             framebuffer[x + y * width] = spheres[i].color * (diffuseIntensity + specIntensity);
         }
     }
@@ -101,9 +102,9 @@ int main() {
     spheres.push_back(Sphere(dvec3(1.5, -0.5, -18), 3, dvec3(0.3, 0.1, 0.1)));
     spheres.push_back(Sphere(dvec3(7, 5, -18), 4, dvec3(0.4, 0.4, 0.3)));
 
-    lights.emplace_back(dvec3(-20, 20, 20), 1.0);
-    lights.emplace_back(dvec3(30, 50, -25), 1.3);
-    lights.emplace_back(dvec3(30, 20, 30), 1.0);
+    lights.emplace_back(dvec3(-20, 20, 20), 1.5);
+    lights.emplace_back(dvec3(30, 50, -25), 1.8);
+    lights.emplace_back(dvec3(30, 20, 30), 1.7);
 
     perspectiveRender(M_PI / 2.0, 1);
     return 0;
