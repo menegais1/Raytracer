@@ -25,21 +25,30 @@ void saveFrameBuffer(dvec3 *frameBuffer, int width, int height) {
     ofs.close();
 }
 
+dvec3 perfectReflectionVector(dvec3 normal, dvec3 i) {
+    return i - (normal * normal.dot(i)) * 2.0;
+}
+
 bool sceneIntersection(Ray ray, int x, int y) {
     dvec3 point;
     float distance = 10000;
+    framebuffer[x + y * width] = dvec3(0.2, 0.7, 0.8);;
     for (int i = 0; i < spheres.size(); ++i) {
         bool intersect = ray.raySphereIntersection(spheres[i], point);
         if (intersect && std::abs(point.z) < distance) {
-            distance = point.z;
+            distance = std::abs(point.z);
             dvec3 normal = (point - spheres[i].center).unit();
-            float lightIntensity = 0;
+            float diffuseIntensity = 0;
+            float specIntensity = 0;
             for (int j = 0; j < lights.size(); ++j) {
                 dvec3 lightDir = (lights[j].position - point).unit();
-                lightIntensity += lights[j].intensity * std::max(0.0, normal.dot(lightDir));
+                dvec3 reflection = perfectReflectionVector(normal, lightDir).unit();
+                specIntensity +=
+                        lights[j].intensity * std::pow(std::max(0.0, ray.direction.dot(reflection)), 50);
+                diffuseIntensity += lights[j].intensity * std::max(0.0, normal.dot(lightDir));
             }
-
-            framebuffer[x + y * width] = spheres[i].color * lightIntensity;
+            std::cout << specIntensity << std::endl;
+            framebuffer[x + y * width] = spheres[i].color * (diffuseIntensity + specIntensity);
         }
     }
 }
@@ -50,7 +59,6 @@ void orthographicRender(float cameraWidth, float cameraHeight) {
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            framebuffer[x + y * width] = dvec3(0.4, 0.4, 0.4);
             Ray r = Ray(
                     dvec3((x * pixelSizeX - cameraWidth / 2) * screenRatio, y * pixelSizeY - cameraHeight / 2,
                           0), dvec3(0, 0, -1));
@@ -68,7 +76,6 @@ void orthographicRender(float cameraWidth, float cameraHeight) {
 void perspectiveRender(float fov, float cameraDistance) {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            framebuffer[x + y * width] = dvec3(0.4, 0.4, 0.4);
             //In this case, since we are converting the image pixels to a normalized space, between [-1,1], we have to account for the aspect ratio
             //so the image wont get stretched
 
@@ -89,13 +96,15 @@ void perspectiveRender(float fov, float cameraDistance) {
 int main() {
 
 
-    spheres.emplace_back(dvec3(0, 0, -5), 1, dvec3(1, 0, 0));
-    spheres.emplace_back(dvec3(-3, 0, -5), 1, dvec3(0, 1, 0));
-    spheres.emplace_back(dvec3(1, 3, -4), 1, dvec3(0, 0, 1));
+    spheres.push_back(Sphere(dvec3(-3, 0, -16), 2, dvec3(0.4, 0.4, 0.3)));
+    spheres.push_back(Sphere(dvec3(-1.0, -1.5, -12), 2, dvec3(0.3, 0.1, 0.1)));
+    spheres.push_back(Sphere(dvec3(1.5, -0.5, -18), 3, dvec3(0.3, 0.1, 0.1)));
+    spheres.push_back(Sphere(dvec3(7, 5, -18), 4, dvec3(0.4, 0.4, 0.3)));
 
-    lights.emplace_back(dvec3(1, 1, -2), 1);
+    lights.emplace_back(dvec3(-20, 20, 20), 1.0);
+    lights.emplace_back(dvec3(30, 50, -25), 1.3);
+    lights.emplace_back(dvec3(30, 20, 30), 1.0);
 
-    perspectiveRender(3.145 * 3 / 4.0, 1);
-//    orthographicRender(20,20);
+    perspectiveRender(M_PI / 2.0, 1);
     return 0;
 }
