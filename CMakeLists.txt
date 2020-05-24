@@ -3,4 +3,4 @@ project(Raytracer)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(Raytracer Vectors/Vector2.h Vectors/Vector3.h Vectors/Vector4.h Vectors/Matrix.h main.cpp)
+add_executable(Raytracer Vectors/Vector2.h Vectors/Vector3.h Vectors/Vector4.h Vectors/Matrix.h main.cpp Ray.cpp Ray.h Sphere.cpp Sphere.h)
