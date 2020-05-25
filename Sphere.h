@@ -7,6 +7,7 @@
 
 
 #include "Vectors/Vector3.h"
+#include "Material.h"
 
 class Sphere {
 public:
@@ -14,11 +15,11 @@ public:
 
     dvec3 center;
     float radius;
-    dvec3 color;
+    Material material;
 
     Sphere(const dvec3 &center, float radius);
 
-    Sphere(const dvec3 &center, float radius, const dvec3 &color);
+    Sphere(const dvec3 &center, float radius, Material material);
 };
 
 

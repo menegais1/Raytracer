@@ -6,7 +6,8 @@
 
 Sphere::Sphere(const dvec3 &center, float radius) : center(center), radius(radius) {}
 
-Sphere::Sphere(const dvec3 &center, float radius, const dvec3 &color) : center(center), radius(radius), color(color) {}
+Sphere::Sphere(const dvec3 &center, float radius, Material material)
+        : center(center), radius(radius),  material(material) {}
 
 Sphere::Sphere() {
 
